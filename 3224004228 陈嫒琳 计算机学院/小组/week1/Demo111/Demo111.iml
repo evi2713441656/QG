@@ -7,5 +7,7 @@
     </content>
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="mysql-connector-j-9.1.0" level="project" />
+    <orderEntry type="module" module-name="Demo1" />
   </component>
 </module>
