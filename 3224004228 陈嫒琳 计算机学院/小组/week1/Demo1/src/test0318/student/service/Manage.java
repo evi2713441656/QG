@@ -100,7 +100,7 @@ public class Manage
                 }
                 // 初始化登录用户对象
                 if (userType == 1) {
-                    loginAdministrator = new Administrator(rs.getString("name"), rs.getInt("id"), dbPassword);
+                    loginAdministrator = new Administrator(rs.getInt("id"), dbPassword);
                     adminManage();
                 } else {
                     loginStudent = new Student(rs.getInt("id"), rs.getString("name"), rs.getString("tel"), dbPassword);

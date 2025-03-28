@@ -1,9 +1,9 @@
 package test0318.student.entity;
 
 public class Administrator {
-    private String AdminName;
     private int AdminId;
     private String Password;
+    private String AdminName;
 
     public String getAdminName() {
         return AdminName;
@@ -32,8 +32,13 @@ public class Administrator {
     public Administrator() {
     }
 
-    public Administrator(String adminName, int adminId, String password) {
-        AdminName = adminName;
+    public Administrator(int adminId, String password, String adminName) {
+        AdminId = adminId;
+        Password = password;
+        AdminName= adminName;
+    }
+
+    public Administrator(int adminId, String password) {
         AdminId = adminId;
         Password = password;
     }

@@ -1,0 +1,634 @@
+<!--这个是用来存档的 项目在web里面-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<head>
+    <meta charset="UTF-8">
+    <!--标题-->
+    <title>登录/注册页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            align-items: center;     /* 垂直居中 */
+            min-height: 100vh;       /* 至少占满整个视口高度 */
+            background: #f0f2f5;
+            font-family: Arial, sans-serif;  /*设置页面默认字体为 Arial*/
+            /* 渐变背景 */
+            background: linear-gradient(135deg, #34FFCDCC, #C9ADFACC);
+        }
+
+        /*整个框*/
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px #5C5696;
+            width: 400px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        /*登录注册选项下面的高光*/
+        .tab.active {
+            /*字的高亮*/
+            color: #1890ff;
+            /*字底下的高亮*/
+            border-bottom-color: #1890ff;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #ddd;
+            border-radius: 40px;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #1890ff;
+            box-shadow: 0 0 0 3px rgba(24,144,255,0.2);
+        }
+
+        .error {
+            color: #e86567;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: inline-block;
+            position: relative;
+            top: -0.7rem;
+        }
+
+        /*专门用于协议的报错*/
+        .error-privacy{
+            color: #e86567;
+            font-size: 0.875rem;
+            /*margin-top: 0.25rem;*/
+            display: inline-block;
+            /*position: relative;*/
+            /*top: -0.7rem;*/
+            width: 100%;
+            margin-top: 8px; /* 与上方内容间距 */
+        }
+
+        /*专门用于验证码的报错*/
+        .error-sms{
+            color: #e86567;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: inline-block;
+            position: relative;
+            top: 0.2rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: #1b8ffa;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #40a9ff;
+        }
+
+        /* 新增图标相关样式 */
+        .input-icon {
+            position: relative;
+            margin-bottom: 15px;
+            flex: 1;
+        }
+
+        /*图标的位置*/
+        .input-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            transition: color 0.3s;
+        }
+
+        /* 输入的时候给图标留出空间 */
+        .input-icon input {
+            padding-left: 35px;
+        }
+
+        /* 输入框聚焦时图标变色 */
+        .input-icon input:focus + i {
+            color: #3498db;
+        }
+
+        .agree-box {
+            display: flex;
+            flex-direction: column; /* 改为垂直布局 */
+            align-items: flex-start; /* 左对齐 */
+            margin: 10px 0;
+        }
+
+        .agree-content {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;       /* 禁止换行 */
+            gap: 4px;               /* 元素间距 */
+            white-space: nowrap;    /* 强制不换行 */
+            min-width: max-content; /* 关键：根据内容自动扩展 */
+            font-size: 14px;
+        }
+
+        /* label和链接统一设置 */
+        .agree-box label,
+        .agree-box a {
+            display: inline-flex;  /* 行内弹性布局 */
+            align-items: center;
+            height: 20px;         /* 固定高度 */
+            padding: 0 0;       /* 左右内边距 */
+            margin: 0 1px;        /* 元素间距 */
+            vertical-align: middle;
+        }
+
+        /* 复选框特殊处理 */
+        .agree-box input[type="checkbox"] {
+            margin-right: 6px;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        /* 链接样式保持 */
+        .agree-box a {
+            color: #1890ff;
+            text-decoration: none;
+            position: relative;
+            top: 1px; /* 微调对齐 */
+        }
+
+        .agree-box a:hover {
+            text-decoration: underline;
+        }
+
+        .agree-box > * {
+            margin-right: 4px;  /* 元素间间距 */
+        }
+
+        /*倒计时*/
+        .countdown {
+            color: #666;
+            margin-left: 10px;
+        }
+
+        .code-input-wrapper {
+            position: relative;
+            height: 50px;
+            /*border: 0px solid #ddd;*/
+            border-radius: 40px;
+            /*overflow: hidden;*/
+        }
+
+        /*获取验证码按钮*/
+        .send-code-btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            bottom: 5px;
+            width: 110px;
+            background: #1890ff;
+            color: white;
+            border-radius: 20px;
+            display: flex;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        /*验证码按钮禁用时*/
+        .send-code-btn:disabled {
+            background: #cccccc;
+        }
+
+        /* 新增统一操作链接样式 */
+        .switch-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+        }
+
+        .switch-link {
+            color: #1890ff;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .forgot-pwd {
+            color: #1890ff;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .switch-link:hover, .forgot-pwd:hover {
+            color: #40a9ff;
+            /*text-decoration: underline;*/
+        }
+
+        /* 手机登录界面单独调整 */
+        .switch-line:has(.switch-link:only-child) {
+            justify-content: flex-end;
+        }
+
+    </style>
+</head>
+<body>
+<!--view层-->
+<div id="app">
+    <div class="container">
+        <!--按键切换登录注册-->
+        <div class="tabs">
+            <!--当 isLogin 为 true 时，按钮会添加 active 类名-->
+            <div
+                    class="tab"
+                    :class="{ active: isLogin }"
+                    @click="switchForm(true)"
+            >登录</div>
+            <div
+                    class="tab"
+                    :class="{ active: !isLogin }"
+                    @click="switchForm(false)"
+            >注册</div>
+        </div>
+
+        <!-- 登录表单 -->
+        <form v-if="isLogin" @submit.prevent="handleSubmit">
+            <!-- 账号密码登录 -->
+            <div v-if="loginMethod === 'password'">
+                <!--账号-->
+                <div class="form-group">
+                    <label>邮箱/手机号</label>
+                    <div class="input-icon">
+                        <!--v-model 双向数据绑定-->
+                        <input type="text"
+                               v-model="loginForm.account"
+                               @blur="validateField('account', loginForm.account)"
+                        >
+                        <i class="fas fa-user"></i> <!-- 用户图标 -->
+                    </div>
+                    <div class="error">{{ errors.login.account }}</div>
+                </div>
+
+                <!--密码-->
+                <div class="form-group">
+                    <label>密码</label>
+                    <div class="input-icon">
+                        <input
+                                type="password"
+                                v-model="loginForm.password"
+                                @blur="validateField('password', loginForm.password)"
+                        >
+                        <!-- 密码锁图标 -->
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <div class="error">{{ errors.login.password }}</div>
+                </div>
+
+                <!-- 切换到手机登录 -->
+                <div class="switch-line">
+                    <a class="forgot-pwd" @click.prevent="handleForgotPassword">忘记密码？</a>
+                    <a class="switch-link" @click.prevent="switchLoginMethod('sms')">手机号登录</a>
+                </div>
+            </div>
+
+            <!-- 短信登录表单 -->
+            <div v-if="loginMethod === 'sms'">
+                <div class="form-group">
+                    <label>手机号</label>
+                    <div class="input-icon">
+                        <input
+                                type="tel"
+                                v-model="smsForm.phone"
+                                @blur="validatePhone"
+                                maxlength="11"
+                        >
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="error">{{ errors.sms.phone }}</div>
+                </div>
+                <!--验证码-->
+                <div class="form-group">
+                    <label>验证码</label>
+                    <div class="code-input-wrapper">
+                        <div class="input-icon">
+                            <input
+                                    type="text"
+                                    v-model="smsForm.code"
+                                    @blur="validateCode"
+                                    maxlength="6"
+                            >
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <button
+                                type="button"
+                                class="send-code-btn"
+                                @click="sendVerificationCode"
+                                :disabled="countdown > 0"
+                        >
+                            {{ countdown ? `${countdown}s后重试` : '获取验证码' }}
+                        </button>
+                    </div>
+                    <div class="error-sms">{{ errors.sms.code }}</div>
+                </div>
+
+                <!-- 切换回账号密码 -->
+                <div class="switch-line">
+                    <a class="switch-link" @click.prevent="switchLoginMethod('password')">账号密码登录</a>
+                </div>
+            </div>
+
+            <!-- 协议条款-->
+            <div class="agree-box">
+                <div class="agree-content"> <!-- 包裹层 -->
+                    <input
+                            type="checkbox"
+                            v-model="agreeChecked"
+                            @change="clearAgreeError"
+                    >
+                    <span>我已阅读并同意</span>
+                    <a href="javascript:" @click="showAgreement">《用户协议》</a>
+                    <span>和</span>
+                    <a href="javascript:" @click="showPrivacy">《隐私政策》</a>
+                </div>
+                <div class="error-privacy">{{ agreeError }}</div>
+            </div>
+
+            <button type="submit">立即登录</button>
+        </form>
+
+        <!-- 注册表单 -->
+        <form v-else @submit.prevent="handleSubmit">
+            <!-- 账号 -->
+            <div class="form-group">
+                <label>邮箱/手机号</label>
+                <div class="input-icon">
+                    <input
+                            type="text"
+                            v-model="registerForm.account"
+                            @blur="validateField('account', registerForm.account)"
+                    >
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="error">{{ errors.register.account }}</div>
+            </div>
+
+            <!-- 密码 -->
+            <div class="form-group">
+                <label>密码</label>
+                <div class="input-icon">
+                    <input
+                            type="password"
+                            v-model="registerForm.password"
+                            @blur="validateField('password', registerForm.password)"
+                    >
+                    <i class="fas fa-lock"></i>
+                </div>
+                <div class="error">{{ errors.register.password }}</div>
+            </div>
+
+            <!-- 确认密码 -->
+            <div class="form-group">
+                <label>确认密码</label>
+                <div class="input-icon">
+                    <input
+                            type="password"
+                            v-model="registerForm.confirmPassword"
+                            @blur="validateConfirmPassword"
+                    >
+                    <i class="fas fa-lock"></i>
+                </div>
+                <div class="error">{{ errors.register.confirmPassword }}</div>
+            </div>
+
+            <!-- 协议条款-->
+            <div class="agree-box">
+                <div class="agree-content"> <!-- 包裹层 -->
+                    <input
+                            type="checkbox"
+                            v-model="agreeChecked"
+                            @change="clearAgreeError"
+                    >
+                    <span>我已阅读并同意</span>
+                    <a href="javascript:;" @click="showAgreement">《用户协议》</a>
+                    <span>和</span>
+                    <a href="javascript:;" @click="showPrivacy">《隐私政策》</a>
+                </div>
+                <div class="error-privacy">{{ agreeError }}</div>
+            </div>
+
+            <button type="submit">立即注册</button>
+        </form>
+    </div>
+</div>
+
+<!--引入Vue.js库-->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                isLogin: true,                      //一开始是登录
+                agreeChecked: false,                //不默认勾选
+                agreeError: '',                     //默认开始无错
+                loginForm: {account: '', password: ''},     //默认表单为空
+                smsForm: {phone: '', code: ''},             //默认表单为空
+                registerForm: {account: '', password: '', confirmPassword: ''},     //默认表单为空
+                errors: {
+                    login: {account: '', password: ''},
+                    register: {account: '', password: '', confirmPassword: ''},
+                    sms: { phone: '', code: '' }
+                },               //默认开始无错
+                loginMethod: 'password',            //一开始是账号密码
+                countdown: 0,                       //倒计时从零开始
+            }
+        },
+        methods: {
+            // 切换登录还是注册
+            switchForm(isLogin) {
+                this.isLogin = isLogin
+                this.clearAllErrors()
+            },
+
+            // 切换登录方式
+            switchLoginMethod(method) {
+                // 清空所有错误提示
+                this.clearAllErrors();
+
+                // 清空旧表单数据
+                this.smsForm = { phone: '', code: '' } // 清手机数据
+                this.loginForm = { account: '', password: '' } // 清账号数据
+
+                //切换登录方式
+                this.loginMethod = method
+            },
+
+            // 统一清空错误的方法（除了同意栏）
+            clearAllErrors() {
+                this.errors = {
+                    login: { account: '', password: '' },
+                    sms: { phone: '', code: '' },
+                    register: { account: '', password: '', confirmPassword: '' }
+                }
+            },
+
+            // 判断账号密码是否为空
+            validateField(field, value) {
+                // 判断是登录还是注册
+                const type = this.isLogin ? 'login' : 'register'
+                // field是账号密码验证码一类 value则是具体的值
+                // 判断是否为空 是就报错
+                if (!value.trim()) {
+                    this.errors[type][field] = '⚠ 该字段不能为空'
+                } else {
+                    this.errors[type][field] = ''
+                }
+            },
+
+            // 检验两次密码是否一致
+            validateConfirmPassword() {
+                if (this.registerForm.password !== this.registerForm.confirmPassword) {
+                    this.errors.register.confirmPassword = '⚠ 两次输入的密码不一致'
+                } else {
+                    this.errors.register.confirmPassword = ''
+                }
+            },
+
+            // 执行所有验证
+            handleSubmit() {
+                const agreementValid = this.validateAgreement()
+                if (this.isLogin) {
+                    this.validateField('account', this.loginForm.account)
+                    this.validateField('password', this.loginForm.password)
+                } else {
+                    this.validateField('account', this.registerForm.account)
+                    this.validateField('password', this.registerForm.password)
+                    this.validateConfirmPassword()
+                }
+                // 检查是否有错误
+                const hasError = this.isLogin ? Object.values(this.errors.login).some(Boolean) : Object.values(this.errors.register).some(Boolean)
+                if (!hasError&& agreementValid) {
+                    alert(this.isLogin ? '登录成功！' : '注册成功！')
+                }
+            },
+
+            // 判断号码格式与是否为空
+            validatePhone() {
+                if (!this.smsForm.phone) {
+                    this.errors.sms.phone = '⚠ 该字段不能为空';
+                } else if (!/^1[3-9]\d{9}$/.test(this.smsForm.phone)) {
+                    this.errors.sms.phone = '⚠ 手机号格式错误';
+                } else {
+                    this.errors.sms.phone = '';
+                }
+            },
+
+            // 判断验证码格式与是否为空
+            validateCode() {
+                if (!this.smsForm.code) {
+                    this.errors.sms.code = '⚠ 请输入验证码';
+                } else if (!/^\d{6}$/.test(this.smsForm.code)) {
+                    this.errors.sms.code = '⚠ 验证码格式错误';
+                } else {
+                    this.errors.sms.code = '';
+                }
+            },
+
+            // 判断同意栏是否为空
+            validateAgreement() {
+                if (!this.agreeChecked) {
+                    this.agreeError = '⚠ 请先阅读并同意相关协议'
+                    return false
+                }
+                return true
+            },
+
+            // 清空同意栏的错误
+            clearAgreeError() {
+                this.agreeError = ''
+            },
+
+            // 同意栏跳转链接
+            showAgreement() {
+                window.open('https://static.account.xiaomi.com/html/agreement/user/zh_CN.html') // 实际替换为具体实现
+            },
+
+            // 协议栏跳转链接
+            showPrivacy() {
+                window.open('https://privacy.mi.com/miaccount/zh_CN/') // 实际替换为具体实现
+            },
+
+            // 忘记密码跳转链接
+            handleForgotPassword() {
+                window.open('https://account.xiaomi.com/helpcenter/faq/zh_CN/02.faqs/03.password/faq-5');
+            },
+
+            // 验证码计时
+            sendVerificationCode() {
+                // 倒计时没从零开始就不开新倒计时
+                if (this.countdown > 0) return
+                // 验证手机号
+                this.validatePhone()
+                // 手机号不对就返回
+                if (this.errors.sms.phone) return
+                // 开始倒计时
+                this.countdown = 60
+                // 计时逻辑
+                const timer = setInterval(() => {
+                    this.countdown--
+                    if (this.countdown <= 0) {
+                        clearInterval(timer)
+                    }
+                }, 1000)
+            }
+        },
+    })
+</script>
+</body>
+</html>
