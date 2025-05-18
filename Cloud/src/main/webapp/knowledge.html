@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <link href="static/css/knowledge.css" rel="stylesheet"> <!-- 引入外部 CSS -->
+    <title>云文档平台</title>
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="static/css/knowledge.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<!-- 加载指示器 -->
+<div class="loading" id="loading">
+    <div class="loading-spinner"></div>
+</div>
+<!-- 登录后首页 -->
+<div class="flex h-screen" id="homePage">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('myKnowledgeBases')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+<!--        <div class="p-4">-->
+<!--            <h2 class="text-xl font-bold">最近发表的文章</h2>-->
+<!--            <select id="sort-select" onchange="sortArticles()">-->
+<!--                <option value="createTime">按发表时间排序</option>-->
+<!--                <option value="likes">按点赞数量排序</option>-->
+<!--            </select>-->
+<!--            <div id="recent-articles">-->
+<!--                &lt;!&ndash; 文章列表 &ndash;&gt;-->
+<!--            </div>-->
+<!--            <div class="pagination" id="article-pagination">-->
+<!--                &lt;!&ndash; 分页按钮 &ndash;&gt;-->
+<!--            </div>-->
+<!--        </div>-->
+    </div>
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <div class="flex">
+                <input type="text" placeholder="搜索..." class="border border-gray-300 p-2 rounded-l">
+                <button onclick="search()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="message-badge-home">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu()">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="user-menu-home">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+            <select id="kb-select" class="border border-gray-300 p-2 rounded">
+                <!-- 动态加载知识库选项 -->
+            </select>
+        </div>
+        <!-- 内容区 -->
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4" id="my-knowledgebases">
+                <!-- 示例知识库卡片 -->
+                <div class="knowledge-card bg-white shadow-md rounded p-4" onclick="showKnowledgeDetail(1)">
+                    <img src="https://picsum.photos/200/150" alt="知识库封面" class="rounded">
+                    <h3 class="text-lg font-bold mt-2">Java编程指南</h3>
+                    <p class="text-gray-600">作者：张三 | 成员数：5</p>
+                    <span class="badge public bg-green-500 text-white px-2 py-1 rounded mt-2 inline-block">公开</span>
+                    <i class="favorite far fa-heart" onclick="toggleFavorite(event, this)"></i>
+<!--                    <i class="fa fa-thumbs-up like-button" onclick="toggleLike(this)"></i>-->
+                </div>
+            </div>
+
+            <h2 class="text-xl font-bold">最近访问的知识库</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4" id="recent-knowledgebases">
+                <!-- 示例知识库卡片 -->
+                <div class="knowledge-card bg-white shadow-md rounded p-4" onclick="showKnowledgeDetail(1)">
+                    <img src="https://picsum.photos/200/150" alt="知识库封面" class="rounded">
+                    <h3 class="text-lg font-bold mt-2">Java编程指南</h3>
+                    <p class="text-gray-600">作者：张三 | 成员数：5</p>
+                    <span class="badge public bg-green-500 text-white px-2 py-1 rounded mt-2 inline-block">公开</span>
+                    <i class="favorite far fa-heart" onclick="toggleFavorite(event, this)"></i>
+                </div>
+            </div>
+            <h2 class="text-xl font-bold mt-8">推荐公开知识库（按热度排序）</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4" id="recommended-knowledgebases">
+                <!-- 示例知识库卡片 -->
+                <div class="knowledge-card bg-white shadow-md rounded p-4" onclick="showKnowledgeDetail(2)">
+                    <img src="https://picsum.photos/200/150" alt="知识库封面" class="rounded">
+                    <h3 class="text-lg font-bold mt-2">Python数据科学</h3>
+                    <p class="text-gray-600">作者：李四 | 成员数：8</p>
+                    <span class="badge public bg-green-500 text-white px-2 py-1 rounded mt-2 inline-block">公开</span>
+                    <i class="favorite far fa-heart" onclick="toggleFavorite(event, this)"></i>
+                </div>
+            </div>
+            <!-- 创建知识库按钮 -->
+            <button onclick="showCreateKnowledgeBaseModal()" class="bg-blue-500 text-white px-4 py-2 rounded mt-4">创建知识库</button>
+        </div>
+    </div>
+</div>
+
+<!-- 公开知识库页面 -->
+<div class="flex h-screen hidden" id="publicKnowledgeBasesPage">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <div class="flex">
+                <input type="text" placeholder="搜索..." class="border border-gray-300 p-2 rounded-l">
+                <button onclick="search()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="message-badge-public">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu()">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="user-menu-public">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 内容区 -->
+        <div class="p-4">
+            <h2 class="text-xl font-bold">公开知识库列表</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4" id="public-knowledgebases">
+                <!-- 公开知识库卡片列表 -->
+            </div>
+            <div class="pagination" id="pagination-public"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近发表的文章页 -->
+<div class="flex h-screen hidden" id="recentArticlesPage">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center flex-none">
+            <div class="flex items-center">
+                <h2 class="text-xl font-bold">最近发表的文章</h2>
+            </div>
+            <div class="flex items-center space-x-4">
+                <!-- 可以添加搜索框或其他功能按钮 -->
+                <select id="sort-select" onchange="sortArticles()" class="border rounded p-1">
+                    <option value="createTime">按发表时间排序</option>
+                    <option value="likes">按点赞数量排序</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 文章列表内容区 -->
+        <div class="flex-1 overflow-auto bg-gray-100 p-4">
+            <div class="bg-white rounded shadow-lg h-full p-6 overflow-auto">
+                <!-- 文章列表容器 -->
+                <div id="recent-articles" class="space-y-4">
+                    <!-- 动态生成的文章卡片会出现在这里 -->
+                    <!-- 示例文章卡片结构 -->
+                    <div class="article-card border-b pb-4">
+                        <h3 class="text-lg font-semibold">文章标题示例</h3>
+                        <p class="text-sm text-gray-500">作者：张三 | 发布时间：2023-07-15</p>
+                        <p class="mt-2 text-gray-700 line-clamp-2">这里是文章摘要内容，超过两行会显示省略号...</p>
+                        <div class="flex items-center mt-2 space-x-4">
+                            <span class="text-sm text-gray-500"><i class="far fa-thumbs-up"></i> 25</span>
+                            <span class="text-sm text-gray-500"><i class="far fa-comment"></i> 8</span>
+                        </div>
+                    </div>
+                </div>
+
+<!--                &lt;!&ndash; 分页控件 &ndash;&gt;-->
+<!--                <div class="mt-6 flex justify-center" id="article-pagination">-->
+<!--                    <nav class="inline-flex rounded-md shadow">-->
+<!--                        <a href="#" class="px-3 py-1 rounded-l-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50">上一页</a>-->
+<!--                        <a href="#" class="px-3 py-1 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">1</a>-->
+<!--                        <a href="#" class="px-3 py-1 border border-gray-300 bg-blue-500 text-white">2</a>-->
+<!--                        <a href="#" class="px-3 py-1 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50">3</a>-->
+<!--                        <a href="#" class="px-3 py-1 rounded-r-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50">下一页</a>-->
+<!--                    </nav>-->
+<!--                </div>-->
+
+                    <div class="pagination" id="article-pagination">
+                        <!-- 分页按钮 -->
+                    </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 企业空间页面 -->
+<div class="flex h-screen hidden" id="companySpacePage">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+        <div class="p-4">
+            <h2 class="text-xl font-bold">企业管理</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700" onclick="showPage('companySpacePage')"><a href="#">企业空间</a></li>
+                <li class="p-2 hover:bg-gray-700" onclick="showPage('company-member-management')"><a href="#">企业成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700" onclick="showPage('company-notice')"><a href="#">企业通知</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <div class="flex">
+                <input type="text" placeholder="搜索..." class="border border-gray-300 p-2 rounded-l">
+                <button onclick="search()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="message-badge-company">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu()">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="user-menu-company">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 内容区 -->
+        <div class="p-4">
+            <h2 class="text-xl font-bold">企业空间内容</h2>
+            <button onclick="showCreateEnterpriseModal()" class="bg-blue-500 text-white px-4 py-2 rounded mt-4">创建企业</button>
+            <div class="mt-4" id="enterprise-list">
+                <!-- 企业列表 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 企业成员管理页面 -->
+<div class="flex h-screen hidden" id="company-member-management">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+        <div class="p-4">
+            <h2 class="text-xl font-bold">企业管理</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700" onclick="showPage('companySpacePage')"><a href="#">企业空间</a></li>
+                <li class="p-2 hover:bg-gray-700" onclick="showPage('company-member-management')"><a href="#">企业成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700" onclick="showPage('company-notice')"><a href="#">企业通知</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <div class="flex">
+                <input type="text" placeholder="搜索..." class="border border-gray-300 p-2 rounded-l">
+                <button onclick="search()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="message-badge-company-member">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu()">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="user-menu-company-member">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 内容区 -->
+        <div class="p-4">
+            <h2 class="text-xl font-bold">企业成员管理</h2>
+            <div class="flex space-x-4 mb-4">
+                <input type="text" placeholder="成员搜索" class="border border-gray-300 p-2 rounded">
+                <select class="border border-gray-300 p-2 rounded">
+                    <option value="all">所有角色</option>
+                    <option value="owner">所有者</option>
+                    <option value="admin">管理员</option>
+                    <option value="member">成员</option>
+                </select>
+                <button class="bg-blue-500 text-white px-4 py-2 rounded">批量操作</button>
+            </div>
+            <table class="w-full border-collapse border border-gray-300">
+                <thead>
+                <tr>
+                    <th class="border border-gray-300 p-2">头像</th>
+                    <th class="border border-gray-300 p-2">名称</th>
+                    <th class="border border-gray-300 p-2">角色</th>
+                    <th class="border border-gray-300 p-2">加入时间</th>
+                    <th class="border border-gray-300 p-2">操作</th>
+                </tr>
+                </thead>
+                <tbody id="company-member-list">
+                <!-- 企业成员列表 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 企业通知页面 -->
+<div class="flex h-screen hidden" id="company-notice">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+        <div class="p-4">
+            <h2 class="text-xl font-bold">企业管理</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700" onclick="showPage('companySpacePage')"><a href="#">企业空间</a></li>
+                <li class="p-2 hover:bg-gray-700" onclick="showPage('company-member-management')"><a href="#">企业成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700" onclick="showPage('company-notice')"><a href="#">企业通知</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <div class="flex">
+                <input type="text" placeholder="搜索..." class="border border-gray-300 p-2 rounded-l">
+                <button onclick="search()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="message-badge-company-notice">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu()">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="user-menu-company-notice">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 内容区 -->
+        <div class="p-4">
+            <h2 class="text-xl font-bold">企业通知</h2>
+            <div id="company-notice-list">
+                <!-- 企业通知列表 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建知识库模态框 -->
+<div id="create-knowledgebase-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white p-8 rounded-lg">
+        <h2 class="text-xl font-bold mb-4">创建知识库</h2>
+        <form>
+            <label for="kb-name" class="block mb-2">知识库名称</label>
+            <input type="text" id="kb-name" name="kb-name" required class="border border-gray-300 p-2 mb-4 w-full">
+            <label for="kb-description" class="block mb-2">知识库描述</label>
+            <textarea id="kb-description" name="kb-description" required class="border border-gray-300 p-2 mb-4 w-full"></textarea>
+            <label for="kb-access" class="block mb-2">访问权限</label>
+            <select id="kb-access" name="kb-access" required class="border border-gray-300 p-2 mb-4 w-full">
+                <option value="private">私有</option>
+                <option value="public">公开</option>
+            </select>
+            <button type="button" onclick="createKnowledgeBase()">创建</button>
+            <button type="button" onclick="hideCreateKnowledgeBaseModal()">取消</button>
+        </form>
+    </div>
+</div>
+
+<!-- 创建企业模态框 -->
+<div id="create-enterprise-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white p-8 rounded-lg">
+        <h2 class="text-xl font-bold mb-4">创建企业</h2>
+        <form>
+            <label for="enterprise-name" class="block mb-2">企业名称</label>
+            <input type="text" id="enterprise-name" name="enterprise-name" required class="border border-gray-300 p-2 mb-4 w-full">
+            <button type="button" onclick="createEnterprise()">创建</button>
+            <button type="button" onclick="hideCreateEnterpriseModal()">取消</button>
+        </form>
+    </div>
+</div>
+
+<!-- 编辑知识库模态框 -->
+<div id="edit-knowledgebase-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white p-8 rounded-lg">
+        <h2 class="text-xl font-bold mb-4">编辑知识库</h2>
+        <form>
+            <label for="edit-kb-name" class="block mb-2">知识库名称</label>
+            <input type="text" id="edit-kb-name" name="edit-kb-name" required class="border border-gray-300 p-2 mb-4 w-full">
+            <label for="edit-kb-description" class="block mb-2">知识库描述</label>
+            <textarea id="edit-kb-description" name="edit-kb-description" class="border border-gray-300 p-2 mb-4 w-full"></textarea>
+            <label for="edit-kb-access" class="block mb-2">访问权限</label>
+            <select id="edit-kb-access" name="edit-kb-access" required class="border border-gray-300 p-2 mb-4 w-full">
+                <option value="private">私有</option>
+                <option value="public">公开</option>
+            </select>
+            <button type="button" onclick="updateKnowledgeBase()">保存</button>
+            <button type="button" onclick="hideEditKnowledgeBaseModal()">取消</button>
+        </form>
+    </div>
+</div>
+
+<!-- 知识库详情页 -->
+<div class="flex h-screen hidden" id="knowledge-detail">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <div class="flex">
+                <input type="text" placeholder="搜索..." class="border border-gray-300 p-2 rounded-l">
+                <button onclick="search()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="message-badge-detail">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu()">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="user-menu-detail">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 文章展示部分 -->
+        <div class="article p-4">
+        </div>
+
+        <!-- 知识库详情内容 -->
+        <div class="p-4">
+            <div class="flex space-x-4">
+                <a href="#" class="text-lg font-bold">文档</a>
+                <a href="#" class="text-lg">成员</a>
+                <a href="#" class="text-lg">设置</a>
+            </div>
+            <div class="mt-4">
+                <p>名称：<span id="kb-name-display"></span></p>
+                <p>简介：<span id="kb-description-display"></span></p>
+                <p>创建者：<span id="kb-creator-display"></span></p>
+                <p>创建时间：<span id="kb-create-time-display"></span></p>
+                <p>访问权限：<span id="kb-access-display"></span></p>
+                <!-- 文章列表区域 -->
+                <h2 class="text-xl font-bold mt-4">文章列表</h2>
+                <div id="article-list"></div>
+            </div>
+            <div class="mt-4 flex justify-end space-x-4">
+                <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="showArticleEditor()">新建</button>
+                <button class="bg-green-500 text-white px-4 py-2 rounded">导入</button>
+                <button class="bg-yellow-500 text-white px-4 py-2 rounded">分享</button>
+                <button class="bg-orange-500 text-white px-4 py-2 rounded" onclick="showEditKnowledgeBaseModal()">修改</button>
+                <button class="bg-red-500 text-white px-4 py-2 rounded" onclick="deleteKnowledgeBase()">删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 文章详情页 -->
+<div class="flex h-screen hidden" id="article-detail">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <!-- 保持左侧菜单不变 -->
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- 右侧内容区 -->
+    <div class="flex-1 flex flex-col min-w-0">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <a href="javascript:void(0);" onclick="showPage('knowledge-detail')" class="text-blue-500"><i class="fas fa-arrow-left mr-2"></i>返回知识库</a>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="message-badge-article">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu('article')">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="article-menu">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 文章详情内容 -->
+        <div class="flex-1 overflow-auto">
+            <div class="bg-white rounded shadow p-6">
+                <!-- 文章标题 -->
+                <h1 id="article-title-display" class="text-2xl font-bold mb-2">文章标题</h1>
+                <!-- 文章信息 -->
+                <div class="mb-4 text-gray-600">
+                    <span>作者：<span id="article-author-display">未知</span></span>
+                    <span class="mx-2">|</span>
+                    <span>发表时间：<span id="article-time-display">未知</span></span>
+                </div>
+                <!-- 文章内容 -->
+                <div id="article-content-display" class="prose max-w-none mb-6">
+                    <!-- 文章内容将动态加载 -->
+                </div>
+                <!-- 点赞和收藏按钮 -->
+                <div class="flex items-center space-x-4 mt-4 border-t pt-4">
+                    <div class="flex items-center cursor-pointer" onclick="toggleArticleLike(event)">
+                        <i id="article-like-button" class="far fa-thumbs-up like-button" data-id="" data-liked="false"></i>
+                        <span class="ml-1">点赞(<span id="article-like-count">0</span>)</span>
+                    </div>
+                    <div class="flex items-center cursor-pointer" onclick="toggleArticleFavorite(event)">
+                        <i id="article-favorite-button" class="far fa-heart favorite-button" data-id=""></i>
+                        <span class="ml-1">收藏</span>
+                    </div>
+                </div>
+                <!-- 评论区 -->
+                <div class="mt-8 border-t pt-4">
+                    <h3 class="text-lg font-bold mb-4">评论区</h3>
+                    <div class="flex space-x-4 mb-6">
+                        <input type="text" id="comment-input" placeholder="发表评论" class="border border-gray-300 p-2 rounded flex-1">
+                        <button onclick="submitComment()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">提交</button>
+                    </div>
+                    <div id="comments-container" class="mt-4">
+                        <!-- 评论列表将动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 文章编辑器界面 -->
+<div class="flex h-screen hidden" id="article-editor">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- 右侧文章编辑区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <div class="flex">
+                <input type="text" placeholder="搜索..." class="border border-gray-300 p-2 rounded-l">
+                <button onclick="search()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="article-message-badge">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu()">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="article-user-menu">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+<!--        ？？？？？？？-->
+        <input type="text" id="article-title" placeholder="文章标题" class="border border-gray-300 p-2 mb-4 w-full">
+        <!-- 文章编辑器工具栏 -->
+        <div class="editor-toolbar">
+            <button onclick="applyFormat('bold')"><i class="fa-solid fa-bold"></i></button>
+            <button onclick="applyFormat('italic')"><i class="fa-solid fa-italic"></i></button>
+            <button onclick="applyFormat('underline')"><i class="fa-solid fa-underline"></i></button>
+            <button onclick="applyFormat('strikethrough')"><i class="fa-solid fa-strikethrough"></i></button>
+            <button onclick="applyFormat('insertUnorderedList')"><i class="fa-solid fa-list-ul"></i></button>
+            <button onclick="applyFormat('insertOrderedList')"><i class="fa-solid fa-list-ol"></i></button>
+            <button onclick="applyFormat('indent')"><i class="fa-solid fa-indent"></i></button>
+            <button onclick="applyFormat('outdent')"><i class="fa-solid fa-outdent"></i></button>
+            <button onclick="applyFormat('justifyLeft')"><i class="fa-solid fa-align-left"></i></button>
+            <button onclick="applyFormat('justifyCenter')"><i class="fa-solid fa-align-center"></i></button>
+            <button onclick="applyFormat('justifyRight')"><i class="fa-solid fa-align-right"></i></button>
+            <button onclick="applyFormat('justifyFull')"><i class="fa-solid fa-align-justify"></i></button>
+            <button onclick="uploadImage()"><i class="fa-solid fa-image"></i></button>
+        </div>
+        <!-- 文章编辑内容区域 -->
+        <div class="editor-content" contenteditable="true" id="editor-content"></div>
+        <!-- 底部操作按钮 -->
+        <div class="p-4 flex justify-end space-x-4">
+            <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="saveArticle()">保存</button>
+            <button class="bg-red-500 text-white px-4 py-2 rounded" onclick="cancelArticle()">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 成员管理页面 -->
+<div class="flex h-screen hidden" id="member-management">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- 右侧成员管理区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <div class="flex">
+                <input type="text" placeholder="搜索..." class="border border-gray-300 p-2 rounded-l">
+                <button onclick="search()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="member-message-badge">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu()">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="member-user-menu">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 成员管理内容区域 -->
+        <div class="p-4">
+            <h2 class="text-xl font-bold">成员管理</h2>
+            <div class="flex space-x-4 mb-4">
+                <input type="text" placeholder="成员搜索" class="border border-gray-300 p-2 rounded">
+                <select class="border border-gray-300 p-2 rounded">
+                    <option value="all">所有角色</option>
+                    <option value="owner">所有者</option>
+                    <option value="admin">管理员</option>
+                    <option value="member">成员</option>
+                </select>
+                <button class="bg-blue-500 text-white px-4 py-2 rounded">批量操作</button>
+            </div>
+            <div class="flex space-x-4 mb-4">
+                <input type="text" placeholder="邀请用户邮箱" id="invite-email" class="border border-gray-300 p-2 rounded">
+                <button class="bg-green-500 text-white px-4 py-2 rounded" onclick="inviteUserAsAdmin()">邀请为管理员</button>
+            </div>
+            <table class="w-full border-collapse border border-gray-300">
+                <thead>
+                <tr>
+                    <th class="border border-gray-300 p-2">头像</th>
+                    <th class="border border-gray-300 p-2">名称</th>
+                    <th class="border border-gray-300 p-2">角色</th>
+                    <th class="border border-gray-300 p-2">加入时间</th>
+                    <th class="border border-gray-300 p-2">操作</th>
+                </tr>
+                </thead>
+                <tbody id="member-list">
+                <!-- 企业成员列表 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 个人信息页面 -->
+<div class="flex h-screen hidden" id="personal-info">
+    <!-- 左侧菜单 -->
+    <div class="bg-gray-800 text-white w-64">
+        <div class="p-4">
+            <h2 class="text-xl font-bold">我的知识库</h2>
+            <ul class="mt-4">
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('homePage')">我的知识库（私有）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('publicKnowledgeBasesPage')">公开知识库</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('recentArticlesPage')">最近发表的文章</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('companySpacePage')">企业空间（如果加入企业）</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('knowledge-detail')">知识库详情</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('article-editor')">文章编辑器</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('member-management')">成员管理</a></li>
+                <li class="p-2 hover:bg-gray-700"><a href="javascript:void(0);" onclick="showPage('personal-info')">个人信息</a></li>
+            </ul>
+        </div>
+    </div>
+    <!-- 右侧个人信息区 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部导航 -->
+        <div class="bg-white shadow-md p-4 flex justify-between items-center">
+            <div class="flex">
+                <input type="text" placeholder="搜索..." class="border border-gray-300 p-2 rounded-l">
+                <button onclick="search()" class="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fa-solid fa-bell text-gray-600" onclick="showMessages()"></i>
+                    <span class="message-badge hidden" id="personal-message-badge">0</span>
+                </div>
+                <div class="relative">
+                    <img src="https://picsum.photos/30/30" alt="User Avatar" class="rounded-full" onclick="toggleUserMenu('personal')">
+                    <div class="absolute top-8 right-0 bg-white shadow-md rounded p-2 hidden" id="personal-user-menu">
+                        <a href="#" class="block p-2 hover:bg-gray-100">个人资料</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">设置</a>
+                        <a href="#" class="block p-2 hover:bg-gray-100">退出登录</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 个人信息内容区域 -->
+        <div class="p-4">
+            <h2 class="text-xl font-bold mb-4">个人信息</h2>
+
+            <div class="flex mb-6">
+                <div class="mr-8">
+                    <div class="w-32 h-32 rounded-full overflow-hidden mb-2 bg-gray-200 relative" id="avatar-container">
+                        <img src="https://picsum.photos/200/200" alt="用户头像" class="w-full h-full object-cover" id="userAvatar">
+                        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer" id="changeAvatarBtn">
+                            <span class="text-white text-center">点击更换头像</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-1">
+                    <button type="button" id="editInfoBtn" class="bg-yellow-500 text-white px-4 py-2 rounded mb-4">编辑信息</button>
+                    <button type="button" onclick="showChangePasswordModal()" class="bg-blue-500 text-white px-4 py-2 rounded mb-4 ml-2">修改密码</button>
+
+                    <form id="personalInfoForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="username" class="block mb-2">用户名</label>
+                                <input type="text" id="username" name="username" class="border border-gray-300 p-2 w-full" readonly>
+                            </div>
+
+                            <div>
+                                <label for="email" class="block mb-2">邮箱</label>
+                                <input type="email" id="email" name="email" class="border border-gray-300 p-2 w-full" readonly>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="button" onclick="savePersonalInfo()" class="bg-blue-500 text-white px-4 py-2 rounded hidden" id="saveBtn">保存</button>
+                            <button type="button" onclick="cancelPersonalInfo()" class="bg-red-500 text-white px-4 py-2 rounded hidden ml-2" id="cancelBtn">取消</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 修改密码模态框 -->
+        <div id="change-password-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h3 class="text-xl font-bold mb-4">修改密码</h3>
+                <form>
+                    <div class="mb-4">
+                        <label for="current-password" class="block mb-2">当前密码</label>
+                        <input type="password" id="current-password" class="border border-gray-300 p-2 w-full">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-password" class="block mb-2">新密码</label>
+                        <input type="password" id="new-password" class="border border-gray-300 p-2 w-full">
+                        <p class="text-xs text-gray-500 mt-1">密码必须包含大小写字母、数字和特殊符号，长度8-20位</p>
+                    </div>
+                    <div class="mb-4">
+                        <label for="confirm-password" class="block mb-2">确认新密码</label>
+                        <input type="password" id="confirm-password" class="border border-gray-300 p-2 w-full">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" onclick="hideChangePasswordModal()" class="bg-gray-300 text-gray-800 px-4 py-2 rounded mr-2">取消</button>
+                        <button type="button" onclick="submitChangePassword()" class="bg-blue-500 text-white px-4 py-2 rounded">确认修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 浏览记录部分 -->
+        <div class="p-4 border-t">
+            <h2 class="text-xl font-bold mb-4">浏览记录</h2>
+            <div id="browse-history" class="space-y-2">
+                <!-- 浏览记录列表将通过JS动态加载 -->
+                <div class="text-center text-gray-500 p-4">加载中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="static/js/api-service.js"></script>
+<script src="static/js/article.js"></script>
+<script src="static/js/auth.js"></script>
+<script src="static/js/comment.js"></script>
+<script src="static/js/enterprise.js"></script>
+<script src="static/js/history.js"></script>
+<script src="static/js/ui-components.js"></script>
+<script src="static/js/knowledge.js"></script>
+<script src="static/js/knowledge-member.js"></script>
+<!--<script src="static/js/main-script.js"></script>-->
+<script src="static/js/personal-info-scripts.js"></script>
+<script src="static/js/search.js"></script>
+<!--<script src="static/js/test.js"></script>-->
+<!--<script src="static/js/ui-components.js"></script>-->
+</body>
+</html>

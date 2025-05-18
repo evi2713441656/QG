@@ -1,0 +1,1032 @@
+/**
+ * 企业管理脚本
+ * 处理企业创建、成员管理、企业通知等功能
+ */
+
+// 当前企业ID
+let currentEnterpriseId = null;
+
+// 初始化企业空间页面
+function initEnterpriseSpacePage() {
+    // 加载企业列表
+    loadEnterpriseList();
+
+    // 绑定创建企业按钮事件
+    document.getElementById('createEnterpriseBtn').addEventListener('click', showCreateEnterpriseModal);
+}
+
+// 加载企业列表
+function loadEnterpriseList() {
+    // 显示加载状态
+    UIController.showLoading();
+
+    ApiService.enterprise.getMyList()
+        .then(res => {
+            if (res.code === 200 && res.data) {
+                // 获取企业列表容器
+                const container = document.getElementById('enterprise-list');
+                container.innerHTML = '';
+
+                // 如果没有企业，显示提示
+                if (res.data.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 p-4">您还没有加入任何企业，点击"创建企业"按钮创建一个吧！</div>';
+                    return;
+                }
+
+                // 渲染企业列表
+                res.data.forEach(enterprise => {
+                    container.appendChild(createEnterpriseCard(enterprise));
+                });
+            } else {
+                UIController.showToast(res.message || '加载企业列表失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast(err.message || '加载企业列表失败', 'error');
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 创建企业卡片
+function createEnterpriseCard(enterprise) {
+    const card = document.createElement('div');
+    card.className = 'enterprise-card bg-white shadow-md rounded p-4 mb-4';
+
+    // 设置卡片内容
+    card.innerHTML = `
+    <div class="flex justify-between items-center">
+      <h3 class="text-lg font-bold">${enterprise.name}</h3>
+      <div class="enterprise-role ${getRoleClass(enterprise.role)}">${getRoleName(enterprise.role)}</div>
+    </div>
+    <p class="text-gray-600 mt-2">创建时间：${new Date(enterprise.createTime).toLocaleString()}</p>
+    <p class="text-gray-600">成员数：${enterprise.memberCount || 0}</p>
+    <div class="mt-4 flex space-x-2">
+      <button class="bg-blue-500 text-white px-3 py-1 rounded" onclick="showEnterpriseDetail(${enterprise.id})">
+        查看详情
+      </button>
+      ${enterprise.role <= 2 ? `
+        <button class="bg-green-500 text-white px-3 py-1 rounded" onclick="showEnterpriseInviteModal(${enterprise.id})">
+          邀请成员
+        </button>
+      ` : ''}
+      ${enterprise.role === 1 ? `
+        <button class="bg-yellow-500 text-white px-3 py-1 rounded" onclick="showEditEnterpriseModal(${enterprise.id})">
+          编辑
+        </button>
+        <button class="bg-red-500 text-white px-3 py-1 rounded" onclick="confirmDeleteEnterprise(${enterprise.id})">
+          删除
+        </button>
+      ` : ''}
+    </div>
+  `;
+
+    return card;
+}
+
+// 获取角色名称
+function getRoleName(role) {
+    switch (role) {
+        case 1: return '所有者';
+        case 2: return '管理员';
+        case 3: return '成员';
+        default: return '未知';
+    }
+}
+
+// 获取角色样式类
+function getRoleClass(role) {
+    switch (role) {
+        case 1: return 'owner';
+        case 2: return 'admin';
+        case 3: return 'member';
+        default: return '';
+    }
+}
+
+// 显示创建企业模态框
+function showCreateEnterpriseModal() {
+    document.getElementById('create-enterprise-modal').classList.remove('hidden');
+}
+
+// 隐藏创建企业模态框
+function hideCreateEnterpriseModal() {
+    document.getElementById('create-enterprise-modal').classList.add('hidden');
+
+    // 清空表单
+    document.getElementById('enterprise-name').value = '';
+}
+
+// 创建企业
+function createEnterprise() {
+    // 获取企业名称
+    const name = document.getElementById('enterprise-name').value;
+
+    // 表单验证
+    if (!name) {
+        UIController.showToast('请输入企业名称', 'error');
+        return;
+    }
+
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用创建企业API
+    ApiService.enterprise.create(name)
+        .then(res => {
+            if (res.code === 200) {
+                UIController.showToast('创建企业成功', 'success');
+
+                // 关闭模态框
+                hideCreateEnterpriseModal();
+
+                // 重新加载企业列表
+                loadEnterpriseList();
+            } else {
+                UIController.showToast(res.message || '创建企业失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast(err.message || '创建企业失败', 'error');
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 显示企业详情
+function showEnterpriseDetail(id) {
+    // 设置当前企业ID
+    currentEnterpriseId = id;
+
+    // 显示加载状态
+    UIController.showLoading();
+
+    ApiService.enterprise.getDetail(id)
+        .then(res => {
+            if (res.code === 200 && res.data) {
+                // 显示企业详情页
+                UIController.showPage('enterprise-detail');
+
+                // 填充企业信息
+                document.getElementById('enterprise-name-display').textContent = res.data.name;
+                document.getElementById('enterprise-owner-display').textContent = res.data.ownerName;
+                document.getElementById('enterprise-create-time-display').textContent = new Date(res.data.createTime).toLocaleString();
+                document.getElementById('enterprise-member-count-display').textContent = res.data.memberCount || 0;
+
+                // 设置当前用户角色
+                document.getElementById('enterprise-role-display').textContent = getRoleName(res.data.currentUserRole);
+
+                // 根据角色显示不同的操作
+                const actionContainer = document.getElementById('enterprise-actions');
+                actionContainer.innerHTML = '';
+
+                if (res.data.currentUserRole <= 2) {
+                    // 创建邀请成员按钮
+                    const inviteButton = document.createElement('button');
+                    inviteButton.className = 'bg-green-500 text-white px-3 py-1 rounded mr-2';
+                    inviteButton.textContent = '邀请成员';
+                    inviteButton.onclick = () => showEnterpriseInviteModal(id);
+                    actionContainer.appendChild(inviteButton);
+
+                    // 创建查看成员按钮
+                    const membersButton = document.createElement('button');
+                    membersButton.className = 'bg-blue-500 text-white px-3 py-1 rounded mr-2';
+                    membersButton.textContent = '成员管理';
+                    membersButton.onclick = () => showEnterpriseMemberPage(id);
+                    actionContainer.appendChild(membersButton);
+                }
+
+                if (res.data.currentUserRole === 1) {
+                    // 创建编辑按钮
+                    const editButton = document.createElement('button');
+                    editButton.className = 'bg-yellow-500 text-white px-3 py-1 rounded mr-2';
+                    editButton.textContent = '编辑企业';
+                    editButton.onclick = () => showEditEnterpriseModal(id);
+                    actionContainer.appendChild(editButton);
+
+                    // 创建删除按钮
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'bg-red-500 text-white px-3 py-1 rounded';
+                    deleteButton.textContent = '删除企业';
+                    deleteButton.onclick = () => confirmDeleteEnterprise(id);
+                    actionContainer.appendChild(deleteButton);
+                }
+
+                // 加载企业知识库列表
+                loadEnterpriseKnowledgeBases(id);
+            } else {
+                UIController.showToast(res.message || '加载企业详情失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast(err.message || '加载企业详情失败', 'error');
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 加载企业知识库列表
+function loadEnterpriseKnowledgeBases(enterpriseId) {
+    fetch(`/enterprise/${enterpriseId}/knowledge-bases`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                // 获取企业知识库容器
+                const container = document.getElementById('enterprise-knowledge-bases');
+                container.innerHTML = '';
+
+                // 如果没有知识库，显示提示
+                if (data.data.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 p-4">企业暂无知识库</div>';
+                    return;
+                }
+
+                // 创建知识库网格
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4';
+
+                // 渲染知识库卡片
+                data.data.forEach(kb => {
+                    grid.appendChild(createKnowledgeBaseCard(kb));
+                });
+
+                container.appendChild(grid);
+            } else {
+                console.error('加载企业知识库失败:', data.message);
+            }
+        })
+        .catch(err => {
+            console.error('加载企业知识库失败:', err);
+        });
+}
+
+// 显示企业成员管理页面
+function showEnterpriseMemberPage(enterpriseId) {
+    // 设置当前企业ID
+    currentEnterpriseId = enterpriseId;
+
+    // 显示企业成员管理页面
+    UIController.showPage('company-member-management');
+
+    // 加载企业成员
+    loadEnterpriseMembers(enterpriseId);
+}
+
+// 加载企业成员
+function loadEnterpriseMembers(enterpriseId) {
+    // 显示加载状态
+    UIController.showLoading();
+
+    fetch(`/enterprise/${enterpriseId}/members`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                // 渲染成员列表
+                renderEnterpriseMembers(data.data);
+            } else {
+                UIController.showToast(data.message || '加载企业成员失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('加载企业成员失败', 'error');
+            console.error('加载企业成员失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 渲染企业成员列表
+function renderEnterpriseMembers(members) {
+    // 获取成员列表容器
+    const tableBody = document.getElementById('company-member-list');
+    tableBody.innerHTML = '';
+
+    // 如果没有成员，显示提示
+    if (members.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = '<td colspan="5" class="border border-gray-300 p-4 text-center">暂无成员</td>';
+        tableBody.appendChild(emptyRow);
+        return;
+    }
+
+    // 遍历成员列表
+    members.forEach(member => {
+        const row = document.createElement('tr');
+
+        // 格式化加入时间
+        const joinTime = new Date(member.joinTime).toLocaleString();
+
+        // 角色中文名称
+        const roleName = getRoleName(member.role);
+
+        // 获取当前用户角色
+        const currentUserRole = getCurrentUserRoleInEnterprise();
+
+        // 设置行内容
+        row.innerHTML = `
+      <td class="border border-gray-300 p-2">
+        <img src="${member.avatar || 'https://picsum.photos/30/30'}" alt="用户头像" class="rounded-full w-8 h-8">
+      </td>
+      <td class="border border-gray-300 p-2">${member.username}</td>
+      <td class="border border-gray-300 p-2">
+        ${currentUserRole > 1 || currentUserRole >= member.role ? roleName :
+            `<select class="border border-gray-300 p-1 rounded role-select" data-user-id="${member.userId}" data-original-role="${member.role}">
+            <option value="2" ${member.role === 2 ? 'selected' : ''}>管理员</option>
+            <option value="3" ${member.role === 3 ? 'selected' : ''}>成员</option>
+          </select>`
+        }
+      </td>
+      <td class="border border-gray-300 p-2">${joinTime}</td>
+      <td class="border border-gray-300 p-2">
+        ${member.role === 1 ? '无法操作' :
+            currentUserRole > 1 || currentUserRole >= member.role ?
+                `<button class="text-red-500" onclick="removeEnterpriseMember(${enterpriseId}, ${member.userId})">
+            <i class="fas fa-user-minus"></i> 移除
+          </button>` : '权限不足'
+        }
+      </td>
+    `;
+
+        tableBody.appendChild(row);
+    });
+
+    // 绑定角色选择事件
+    document.querySelectorAll('.role-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const userId = this.dataset.userId;
+            const originalRole = this.dataset.originalRole;
+            const newRole = this.value;
+
+            // 如果角色没有变化，不做处理
+            if (originalRole === newRole) return;
+
+            // 确认修改
+            UIController.showConfirm('确定要修改该成员的角色吗？', () => {
+                updateEnterpriseMemberRole(currentEnterpriseId, userId, newRole);
+            }, () => {
+                // 取消修改，恢复原来的选择
+                this.value = originalRole;
+            });
+        });
+    });
+}
+
+// 获取当前用户在企业中的角色
+function getCurrentUserRoleInEnterprise() {
+    // 从页面或本地存储获取
+    const roleDisplay = document.getElementById('enterprise-role-display');
+    if (roleDisplay) {
+        const roleName = roleDisplay.textContent;
+        if (roleName === '所有者') return 1;
+        if (roleName === '管理员') return 2;
+        if (roleName === '成员') return 3;
+    }
+
+    // 默认返回普通成员权限
+    return 3;
+}
+
+// 显示企业邀请成员模态框
+function showEnterpriseInviteModal(enterpriseId) {
+    // 设置当前企业ID
+    document.getElementById('invite-enterprise-id').value = enterpriseId;
+
+    // 显示模态框
+    document.getElementById('enterprise-invite-modal').classList.remove('hidden');
+}
+
+// 隐藏企业邀请成员模态框
+function hideEnterpriseInviteModal() {
+    document.getElementById('enterprise-invite-modal').classList.add('hidden');
+
+    // 清空表单
+    document.getElementById('invite-enterprise-identifier').value = '';
+    document.getElementById('invite-enterprise-role').value = '3';
+}
+
+// 邀请企业成员
+function inviteEnterpriseMember() {
+    // 获取表单数据
+    const enterpriseId = document.getElementById('invite-enterprise-id').value;
+    const identifier = document.getElementById('invite-enterprise-identifier').value;
+    const role = document.getElementById('invite-enterprise-role').value;
+
+    // 表单验证
+    if (!identifier) {
+        UIController.showToast('请输入用户名或邮箱', 'error');
+        return;
+    }
+
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用邀请API
+    fetch('/enterprise/member/invite', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            enterpriseId,
+            identifier,
+            role
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200) {
+                UIController.showToast('邀请成功', 'success');
+
+                // 关闭模态框
+                hideEnterpriseInviteModal();
+
+                // 如果当前在成员管理页面，重新加载成员列表
+                if (document.getElementById('company-member-management').classList.contains('hidden') === false) {
+                    loadEnterpriseMembers(enterpriseId);
+                }
+            } else {
+                UIController.showToast(data.message || '邀请失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('邀请失败', 'error');
+            console.error('邀请企业成员失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 移除企业成员
+function removeEnterpriseMember(enterpriseId, userId) {
+    // 确认移除
+    UIController.showConfirm('确定要移除该成员吗？', () => {
+        // 显示加载状态
+        UIController.showLoading();
+
+        // 调用移除成员API
+        fetch(`/enterprise/${enterpriseId}/member/${userId}`, {
+            method: 'DELETE'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    UIController.showToast('移除成员成功', 'success');
+
+                    // 重新加载成员列表
+                    loadEnterpriseMembers(enterpriseId);
+                } else {
+                    UIController.showToast(data.message || '移除成员失败', 'error');
+                }
+            })
+            .catch(err => {
+                UIController.showToast('移除成员失败', 'error');
+                console.error('移除企业成员失败:', err);
+            })
+            .finally(() => {
+                UIController.hideLoading();
+            });
+    });
+}
+
+// 更新企业成员角色
+function updateEnterpriseMemberRole(enterpriseId, userId, role) {
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用更新角色API
+    fetch('/enterprise/member/role', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            enterpriseId,
+            userId,
+            role
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200) {
+                UIController.showToast('更新角色成功', 'success');
+
+                // 重新加载成员列表
+                loadEnterpriseMembers(enterpriseId);
+            } else {
+                UIController.showToast(data.message || '更新角色失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('更新角色失败', 'error');
+            console.error('更新企业成员角色失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 显示编辑企业模态框
+function showEditEnterpriseModal(enterpriseId) {
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 获取企业详情
+    ApiService.enterprise.getDetail(enterpriseId)
+        .then(res => {
+            if (res.code === 200 && res.data) {
+                // 填充表单
+                document.getElementById('edit-enterprise-id').value = enterpriseId;
+                document.getElementById('edit-enterprise-name').value = res.data.name;
+
+                // 显示模态框
+                document.getElementById('edit-enterprise-modal').classList.remove('hidden');
+            } else {
+                UIController.showToast(res.message || '获取企业信息失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast(err.message || '获取企业信息失败', 'error');
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 隐藏编辑企业模态框
+function hideEditEnterpriseModal() {
+    document.getElementById('edit-enterprise-modal').classList.add('hidden');
+}
+
+// 更新企业信息
+function updateEnterprise() {
+    // 获取表单数据
+    const enterpriseId = document.getElementById('edit-enterprise-id').value;
+    const name = document.getElementById('edit-enterprise-name').value;
+
+    // 表单验证
+    if (!name) {
+        UIController.showToast('请输入企业名称', 'error');
+        return;
+    }
+
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用更新企业API
+    ApiService.enterprise.update(enterpriseId, name)
+        .then(res => {
+            if (res.code === 200) {
+                UIController.showToast('更新企业信息成功', 'success');
+
+                // 关闭模态框
+                hideEditEnterpriseModal();
+
+                // 重新加载企业详情
+                showEnterpriseDetail(enterpriseId);
+
+                // 如果在企业列表页，也更新列表
+                if (document.getElementById('companySpacePage').classList.contains('hidden') === false) {
+                    loadEnterpriseList();
+                }
+            } else {
+                UIController.showToast(res.message || '更新企业信息失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast(err.message || '更新企业信息失败', 'error');
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 确认删除企业
+function confirmDeleteEnterprise(enterpriseId) {
+    UIController.showConfirm('确定要删除该企业吗？此操作不可撤销！', () => {
+        deleteEnterprise(enterpriseId);
+    });
+}
+
+// 删除企业
+function deleteEnterprise(enterpriseId) {
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用删除企业API
+    fetch(`/enterprise/${enterpriseId}`, {
+        method: 'DELETE'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200) {
+                UIController.showToast('删除企业成功', 'success');
+
+                // 返回企业列表页
+                UIController.showPage('companySpacePage');
+
+                // 重新加载企业列表
+                loadEnterpriseList();
+            } else {
+                UIController.showToast(data.message || '删除企业失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('删除企业失败', 'error');
+            console.error('删除企业失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 初始化企业通知页面
+function initEnterpriseNoticePage() {
+    // 加载企业通知列表
+    loadEnterpriseNotices();
+
+    // 绑定发布通知按钮事件
+    document.getElementById('publish-notice-btn').addEventListener('click', showPublishNoticeModal);
+}
+
+// 加载企业通知列表
+function loadEnterpriseNotices() {
+    // 检查是否有当前企业ID
+    if (!currentEnterpriseId) {
+        UIController.showToast('未选择企业', 'error');
+        return;
+    }
+
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用获取企业通知API
+    fetch(`/enterprise/${currentEnterpriseId}/notices`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                // 获取通知列表容器
+                const container = document.getElementById('company-notice-list');
+                container.innerHTML = '';
+
+                // 如果没有通知，显示提示
+                if (data.data.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 p-4">暂无企业通知</div>';
+                    return;
+                }
+
+                // 渲染通知列表
+                data.data.forEach(notice => {
+                    container.appendChild(createNoticeItem(notice));
+                });
+            } else {
+                UIController.showToast(data.message || '加载企业通知失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('加载企业通知失败', 'error');
+            console.error('加载企业通知失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 创建通知项
+function createNoticeItem(notice) {
+    const item = document.createElement('div');
+    item.className = 'notice-item bg-white shadow-md rounded p-4 mb-4';
+
+    // 格式化时间
+    const publishTime = new Date(notice.publishTime).toLocaleString();
+
+    // 设置通知内容
+    item.innerHTML = `
+    <div class="flex justify-between items-center mb-2">
+      <h3 class="text-lg font-bold">${notice.title}</h3>
+      <span class="text-gray-500 text-sm">${publishTime}</span>
+    </div>
+    <div class="notice-content mb-2">${notice.content}</div>
+    <div class="flex items-center text-sm text-gray-500">
+      <span>发布者: ${notice.publisherName}</span>
+      ${getCurrentUserRoleInEnterprise() <= 2 && notice.publisherId === getCurrentUserId() ? `
+        <div class="ml-auto">
+          <button class="text-blue-500 mr-2" onclick="showEditNoticeModal(${notice.id})">
+            编辑
+          </button>
+          <button class="text-red-500" onclick="confirmDeleteNotice(${notice.id})">
+            删除
+          </button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+    return item;
+}
+
+// 获取当前用户ID
+function getCurrentUserId() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    return currentUser.id || 0;
+}
+
+// 显示发布通知模态框
+function showPublishNoticeModal() {
+    // 显示模态框
+    document.getElementById('publish-notice-modal').classList.remove('hidden');
+
+    // 清空表单
+    document.getElementById('notice-title').value = '';
+    document.getElementById('notice-content').value = '';
+}
+
+// 隐藏发布通知模态框
+function hidePublishNoticeModal() {
+    document.getElementById('publish-notice-modal').classList.add('hidden');
+}
+
+// 发布企业通知
+function publishEnterpriseNotice() {
+    // 检查是否有当前企业ID
+    if (!currentEnterpriseId) {
+        UIController.showToast('未选择企业', 'error');
+        return;
+    }
+
+    // 获取表单数据
+    const title = document.getElementById('notice-title').value;
+    const content = document.getElementById('notice-content').value;
+
+    // 表单验证
+    if (!title) {
+        UIController.showToast('请输入通知标题', 'error');
+        return;
+    }
+
+    if (!content) {
+        UIController.showToast('请输入通知内容', 'error');
+        return;
+    }
+
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用发布通知API
+    fetch('/enterprise/notice', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            enterpriseId: currentEnterpriseId,
+            title,
+            content
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200) {
+                UIController.showToast('发布通知成功', 'success');
+
+                // 关闭模态框
+                hidePublishNoticeModal();
+
+                // 重新加载通知列表
+                loadEnterpriseNotices();
+            } else {
+                UIController.showToast(data.message || '发布通知失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('发布通知失败', 'error');
+            console.error('发布企业通知失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 显示编辑通知模态框
+function showEditNoticeModal(noticeId) {
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 获取通知详情
+    fetch(`/enterprise/notice/${noticeId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200 && data.data) {
+                // 填充表单
+                document.getElementById('edit-notice-id').value = noticeId;
+                document.getElementById('edit-notice-title').value = data.data.title;
+                document.getElementById('edit-notice-content').value = data.data.content;
+
+                // 显示模态框
+                document.getElementById('edit-notice-modal').classList.remove('hidden');
+            } else {
+                UIController.showToast(data.message || '获取通知详情失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('获取通知详情失败', 'error');
+            console.error('获取企业通知详情失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 隐藏编辑通知模态框
+function hideEditNoticeModal() {
+    document.getElementById('edit-notice-modal').classList.add('hidden');
+}
+
+// 更新企业通知
+function updateEnterpriseNotice() {
+    // 获取表单数据
+    const noticeId = document.getElementById('edit-notice-id').value;
+    const title = document.getElementById('edit-notice-title').value;
+    const content = document.getElementById('edit-notice-content').value;
+
+    // 表单验证
+    if (!title) {
+        UIController.showToast('请输入通知标题', 'error');
+        return;
+    }
+
+    if (!content) {
+        UIController.showToast('请输入通知内容', 'error');
+        return;
+    }
+
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用更新通知API
+    fetch(`/enterprise/notice/${noticeId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            title,
+            content
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200) {
+                UIController.showToast('更新通知成功', 'success');
+
+                // 关闭模态框
+                hideEditNoticeModal();
+
+                // 重新加载通知列表
+                loadEnterpriseNotices();
+            } else {
+                UIController.showToast(data.message || '更新通知失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('更新通知失败', 'error');
+            console.error('更新企业通知失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 确认删除通知
+function confirmDeleteNotice(noticeId) {
+    UIController.showConfirm('确定要删除该通知吗？', () => {
+        deleteEnterpriseNotice(noticeId);
+    });
+}
+
+// 删除企业通知
+function deleteEnterpriseNotice(noticeId) {
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用删除通知API
+    fetch(`/enterprise/notice/${noticeId}`, {
+        method: 'DELETE'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200) {
+                UIController.showToast('删除通知成功', 'success');
+
+                // 重新加载通知列表
+                loadEnterpriseNotices();
+            } else {
+                UIController.showToast(data.message || '删除通知失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('删除通知失败', 'error');
+            console.error('删除企业通知失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 创建企业知识库
+function createEnterpriseKnowledgeBase() {
+    // 检查是否有当前企业ID
+    if (!currentEnterpriseId) {
+        UIController.showToast('未选择企业', 'error');
+        return;
+    }
+
+    // 显示创建知识库模态框
+    document.getElementById('create-enterprise-kb-modal').classList.remove('hidden');
+}
+
+// 隐藏创建企业知识库模态框
+function hideCreateEnterpriseKnowledgeBaseModal() {
+    document.getElementById('create-enterprise-kb-modal').classList.add('hidden');
+
+    // 清空表单
+    document.getElementById('enterprise-kb-name').value = '';
+    document.getElementById('enterprise-kb-description').value = '';
+}
+
+// 提交创建企业知识库
+function submitCreateEnterpriseKnowledgeBase() {
+    // 获取表单数据
+    const name = document.getElementById('enterprise-kb-name').value;
+    const description = document.getElementById('enterprise-kb-description').value;
+
+    // 表单验证
+    if (!name) {
+        UIController.showToast('请输入知识库名称', 'error');
+        return;
+    }
+
+    // 显示加载状态
+    UIController.showLoading();
+
+    // 调用创建企业知识库API
+    fetch('/enterprise/knowledge-base', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            enterpriseId: currentEnterpriseId,
+            name,
+            description
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200) {
+                UIController.showToast('创建知识库成功', 'success');
+
+                // 关闭模态框
+                hideCreateEnterpriseKnowledgeBaseModal();
+
+                // 重新加载企业知识库列表
+                loadEnterpriseKnowledgeBases(currentEnterpriseId);
+            } else {
+                UIController.showToast(data.message || '创建知识库失败', 'error');
+            }
+        })
+        .catch(err => {
+            UIController.showToast('创建知识库失败', 'error');
+            console.error('创建企业知识库失败:', err);
+        })
+        .finally(() => {
+            UIController.hideLoading();
+        });
+}
+
+// 导出模块
+window.EnterpriseManager = {
+    initEnterpriseSpacePage,
+    loadEnterpriseList,
+    createEnterprise,
+    showEnterpriseDetail,
+    showEditEnterpriseModal,
+    updateEnterprise,
+    confirmDeleteEnterprise,
+    showEnterpriseMemberPage,
+    loadEnterpriseMembers,
+    showEnterpriseInviteModal,
+    inviteEnterpriseMember,
+    removeEnterpriseMember,
+    updateEnterpriseMemberRole,
+    initEnterpriseNoticePage,
+    loadEnterpriseNotices,
+    publishEnterpriseNotice,
+    updateEnterpriseNotice,
+    confirmDeleteNotice,
+    createEnterpriseKnowledgeBase
+};
